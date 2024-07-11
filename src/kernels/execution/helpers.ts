@@ -106,6 +106,12 @@ export class NotebookCellStateTracker {
 
 export function traceCellMessage(cell: NotebookCell, message: string | (() => string)) {
     let messageToLog = typeof message === 'string' ? () => message : message;
+    logger.trace(
+        `Cell Index:${cell.index}, of document ${uriPath.basename(
+            cell.notebook.uri
+        )} with state:${NotebookCellStateTracker.getCellStatus(cell)}, exec: ${cell.executionSummary
+            ?.executionOrder}. ${messageToLog()}. called from ${getExtensionSpecificStack()}`
+    );
     logger.ci(
         () =>
             `Cell Index:${cell.index}, of document ${uriPath.basename(

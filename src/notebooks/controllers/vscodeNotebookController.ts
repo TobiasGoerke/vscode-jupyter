@@ -539,6 +539,7 @@ export class VSCodeNotebookController implements Disposable, IVSCodeNotebookCont
     }
 
     public async executeCell(doc: NotebookDocument, cell: NotebookCell, codeOverride?: string) {
+        logger.trace(`executeCell ${cell.index}. Step 1`);
         const disposables = new DisposableStore();
         const token = disposables.add(new CancellationTokenSource());
 
@@ -553,7 +554,9 @@ export class VSCodeNotebookController implements Disposable, IVSCodeNotebookCont
         let kernelStarted = false;
         const lastCellExecutionTracker = this.serviceContainer.get<LastCellExecutionTracker>(LastCellExecutionTracker);
         try {
+            logger.trace(`executeCell ${cell.index}. Step 2`);
             kernel = await this.connectToKernel(doc, new DisplayOptions(false));
+            logger.trace(`executeCell ${cell.index}. Step 3`);
             if (kernel.disposing) {
                 throw new CancellationError();
             }
@@ -575,6 +578,7 @@ export class VSCodeNotebookController implements Disposable, IVSCodeNotebookCont
             // Track the information so we can restore execution upon reloading vs code or the like.
             lastCellExecutionTracker.trackCellExecution(cell, kernel);
             const kernelExecution = this.kernelProvider.getKernelExecution(kernel);
+            logger.trace(`executeCell ${cell.index}. Step 4`);
             const promise = kernelExecution.executeCell(cell, codeOverride);
 
             // If we complete execution, then there is nothing to be restored.
