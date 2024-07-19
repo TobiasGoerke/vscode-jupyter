@@ -214,8 +214,6 @@ export class KernelConnector {
             this.deleteKernelInfo(notebookResource, promise);
             if (deadKernelAction === 'deadKernelWasNoRestarted') {
                 throw new KernelDeadError(kernel.kernelConnectionMetadata);
-            } else if (deadKernelAction === 'deadKernelWasRestarted') {
-                return kernel;
             }
             // Kernel is dead and we didn't prompt the user to restart it, hence re-run the code that will prompt the user for a restart.
             return KernelConnector.wrapKernelMethod(
