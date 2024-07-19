@@ -258,6 +258,11 @@ export class VSCodeNotebookController implements Disposable, IVSCodeNotebookCont
             return;
         }
 
+        void initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
+            kernel.resourceUri,
+            kernel.kernelConnectionMetadata
+        );
+
         // If we're connected to the same kernel session and the same cell is still getting executed,
         // then ensure to mark the cell as busy and attach the outputs of the execution to the cell.
         let resumed = false;

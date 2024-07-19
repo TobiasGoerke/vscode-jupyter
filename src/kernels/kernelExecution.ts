@@ -21,7 +21,6 @@ import { CellExecutionMessageHandlerService } from './execution/cellExecutionMes
 import { CellExecutionQueue } from './execution/cellExecutionQueue';
 import { cellOutputToVSCCellOutput, traceCellMessage } from './execution/helpers';
 import { executeSilently } from './helpers';
-import { initializeInteractiveOrNotebookTelemetryBasedOnUserAction } from './telemetry/helper';
 import { sendKernelTelemetryEvent } from './telemetry/sendKernelTelemetryEvent';
 import {
     IKernel,
@@ -140,10 +139,6 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
             return;
         }
 
-        await initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
-            this.kernel.resourceUri,
-            this.kernel.kernelConnectionMetadata
-        );
         sendKernelTelemetryEvent(this.kernel.resourceUri, Telemetry.ResumeCellExecution);
         const sessionPromise = this.kernel.start(new DisplayOptions(false));
         const executionQueue = this.getOrCreateCellExecutionQueue(cell.notebook, sessionPromise);
@@ -167,11 +162,9 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         }
 
         traceCellMessage(cell, `NotebookKernelExecution.executeCell (2), ${getDisplayPath(cell.notebook.uri)}`);
-        await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
         traceCellMessage(cell, `NotebookKernelExecution.executeCell (3), ${getDisplayPath(cell.notebook.uri)}`);
         // If we're restarting, wait for it to finish
-        await this.kernel.restarting;
-        const sessionPromise = this.kernel.start(new DisplayOptions(false));
+        const sessionPromise = this.kernel.restarting.then(() => this.kernel.start(new DisplayOptions(false)));
 
         traceCellMessage(cell, `NotebookKernelExecution.executeCell (4), ${getDisplayPath(cell.notebook.uri)}`);
         const executionQueue = this.getOrCreateCellExecutionQueue(cell.notebook, sessionPromise);
@@ -203,10 +196,8 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         token: CancellationToken
     ): AsyncGenerator<NotebookCellOutput, void, unknown> {
         const stopWatch = new StopWatch();
-        await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
         // If we're restarting, wait for it to finish
-        await this.kernel.restarting;
-        const sessionPromise = this.kernel.start(new DisplayOptions(false));
+        const sessionPromise = this.kernel.restarting.then(() => this.kernel.start(new DisplayOptions(false)));
 
         const executionQueue = this.getOrCreateCellExecutionQueue(this.notebook, sessionPromise);
 
@@ -289,18 +280,6 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         return sessionPromise.then((session) =>
             session.kernel ? executeSilently(session.kernel, code) : Promise.reject(new SessionDisposedError())
         );
-    }
-
-    private _initializeInteractiveOrNotebookTelemetryBasedOnUserAction?: Promise<void>;
-    private initializeInteractiveOrNotebookTelemetryBasedOnUserAction() {
-        if (!this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction) {
-            this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction =
-                initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
-                    this.kernel.resourceUri,
-                    this.kernel.kernelConnectionMetadata
-                );
-        }
-        return this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction;
     }
     private async onWillInterrupt() {
         const executionQueue = this.documentExecutions.get(this.notebook);
