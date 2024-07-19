@@ -167,10 +167,7 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         }
 
         traceCellMessage(cell, `NotebookKernelExecution.executeCell, ${getDisplayPath(cell.notebook.uri)}`);
-        await initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
-            this.kernel.resourceUri,
-            this.kernel.kernelConnectionMetadata
-        );
+        await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
         const sessionPromise = this.kernel.start(new DisplayOptions(false));
 
         // If we're restarting, wait for it to finish
@@ -206,10 +203,7 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         token: CancellationToken
     ): AsyncGenerator<NotebookCellOutput, void, unknown> {
         const stopWatch = new StopWatch();
-        await initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
-            this.kernel.resourceUri,
-            this.kernel.kernelConnectionMetadata
-        );
+        await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
         const sessionPromise = this.kernel.start(new DisplayOptions(false));
 
         // If we're restarting, wait for it to finish
@@ -297,6 +291,18 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
             session.kernel ? executeSilently(session.kernel, code) : Promise.reject(new SessionDisposedError())
         );
     }
+
+    private _initializeInteractiveOrNotebookTelemetryBasedOnUserAction?: Promise<void>;
+    private initializeInteractiveOrNotebookTelemetryBasedOnUserAction() {
+        if (!this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction) {
+            this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction =
+                initializeInteractiveOrNotebookTelemetryBasedOnUserAction(
+                    this.kernel.resourceUri,
+                    this.kernel.kernelConnectionMetadata
+                );
+        }
+        return this._initializeInteractiveOrNotebookTelemetryBasedOnUserAction;
+    }
     private async onWillInterrupt() {
         const executionQueue = this.documentExecutions.get(this.notebook);
         if (!executionQueue && this.kernel.kernelConnectionMetadata.kind !== 'connectToLiveRemoteKernel') {
@@ -346,6 +352,7 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
             return existingExecutionQueue;
         }
 
+        logger.trace(`Creating new cell execution queue for ${getDisplayPath(document.uri)}`);
         const newCellExecutionQueue = new CellExecutionQueue(
             sessionPromise,
             this.executionFactory,
