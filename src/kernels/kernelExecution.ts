@@ -166,14 +166,14 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
             return;
         }
 
-        traceCellMessage(cell, `NotebookKernelExecution.executeCell, ${getDisplayPath(cell.notebook.uri)}`);
+        traceCellMessage(cell, `NotebookKernelExecution.executeCell (2), ${getDisplayPath(cell.notebook.uri)}`);
         await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
-        const sessionPromise = this.kernel.start(new DisplayOptions(false));
-
+        traceCellMessage(cell, `NotebookKernelExecution.executeCell (3), ${getDisplayPath(cell.notebook.uri)}`);
         // If we're restarting, wait for it to finish
         await this.kernel.restarting;
+        const sessionPromise = this.kernel.start(new DisplayOptions(false));
 
-        traceCellMessage(cell, `NotebookKernelExecution.executeCell (2), ${getDisplayPath(cell.notebook.uri)}`);
+        traceCellMessage(cell, `NotebookKernelExecution.executeCell (4), ${getDisplayPath(cell.notebook.uri)}`);
         const executionQueue = this.getOrCreateCellExecutionQueue(cell.notebook, sessionPromise);
         executionQueue.queueCell(cell, codeOverride);
         let success = true;
@@ -185,7 +185,7 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
         } finally {
             traceCellMessage(
                 cell,
-                `NotebookKernelExecution.executeCell completed (3), ${getDisplayPath(cell.notebook.uri)}`
+                `NotebookKernelExecution.executeCell completed (5), ${getDisplayPath(cell.notebook.uri)}`
             );
             logger.trace(`Cell ${cell.index} executed ${success ? 'successfully' : 'with an error'}`);
             sendKernelTelemetryEvent(this.kernel.resourceUri, Telemetry.ExecuteCell, {
@@ -204,10 +204,9 @@ export class NotebookKernelExecution implements INotebookKernelExecution {
     ): AsyncGenerator<NotebookCellOutput, void, unknown> {
         const stopWatch = new StopWatch();
         await this.initializeInteractiveOrNotebookTelemetryBasedOnUserAction();
-        const sessionPromise = this.kernel.start(new DisplayOptions(false));
-
         // If we're restarting, wait for it to finish
         await this.kernel.restarting;
+        const sessionPromise = this.kernel.start(new DisplayOptions(false));
 
         const executionQueue = this.getOrCreateCellExecutionQueue(this.notebook, sessionPromise);
 
