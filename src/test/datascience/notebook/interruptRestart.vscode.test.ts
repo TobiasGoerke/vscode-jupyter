@@ -406,8 +406,10 @@ suite('Restart/Interrupt/Cancel/Errors @kernelCore', function () {
         assert.strictEqual(cell2.executionSummary?.executionOrder, 2, 'Cell 1 should have an execution order of 2');
 
         // Restart and run the first cell
+        const restart = kernel.restart();
+        await sleep(500); // Wait a bit for restart to start (else the promises will not be setup).
         await Promise.all([
-            kernel.restart(),
+            restart,
             kernelExecution.executeCell(cell1),
             waitForExecutionCompletedSuccessfully(cell1),
             waitForTextOutput(cell1, '1', 0, false)
